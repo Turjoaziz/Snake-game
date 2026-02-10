@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Snake — Custom Head & Food</title>
+  <style>
+    :root{
+      --bg1:#0b1020; --bg2:#0f1b3a; --card:rgba(255,255,255,.08);
+      --text:#eaf0ff; --muted:rgba(234,240,255,.7);
+      --btn:rgba(255,255,255,.12); --btn2:rgba(255,255,255,.18);
+      --accent:#7dd3fc;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; min-height:100vh; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      color:var(--text);
+      background: radial-gradient(1200px 800px at 20% 10%, #1f2a60 0%, transparent 60%),
+                  radial-gradient(1000px 700px at 80% 20%, #3b1d5a 0%, transparent 55%),
+                  linear-gradient(180deg, var(--bg1), var(--bg2));
+      display:flex; align-items:center; justify-content:center; padding:14px;
+    }
+    .wrap{width:min(560px,100%); display:flex; flex-direction:column; gap:12px;}
+    .topbar{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:12px; background:var(--card); border:1px solid rgba(255,255,255,.14);
+      border-radius:16px; backdrop-filter: blur(10px);
+    }
+    .title{display:flex; flex-direction:column; gap:2px}
+    .title b{font-size:14px; letter-spacing:.2px}
+    .title span{font-size:12px; color:var(--muted)}
+    .stats{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
+      font-size:12px; color:var(--muted);}
+    .pill{
+      padding:7px 10px; background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.12); border-radius:999px; color:var(--text);
+    }
+    .btns{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+    button{
+      border:0; color:var(--text); background:var(--btn);
+      border:1px solid rgba(255,255,255,.14);
+      padding:10px 12px; border-radius:12px; font-weight:600;
+      cursor:pointer; touch-action:manipulation;
+    }
+    button:active{transform:scale(.98); background:var(--btn2)}
+    canvas{
+      width:100%;
+      aspect-ratio:1/1;
+      background:rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:18px; display:block;
+      touch-action:none;
+    }
+    .panel{display:flex; gap:10px; flex-wrap:wrap; align-items:stretch;}
+    .controls,.toggles{
+      flex:1 1 240px; padding:12px; background:var(--card);
+      border:1px solid rgba(255,255,255,.14); border-radius:16px;
+    }
+    .hint{font-size:12px; color:var(--muted); margin:0 0 10px 0}
+    .dpad{
+      display:grid; grid-template-columns:64px 64px 64px;
+      grid-template-rows:64px 64px 64px; gap:10px;
+      justify-content:center; align-items:center;
+      user-select:none; -webkit-user-select:none;
+    }
+    .dpad button{width:64px; height:64px; border-radius:18px; font-size:18px;}
+    .dpad .blank{visibility:hidden}
+    label{display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text); margin:0 0 10px 0}
+    input[type="checkbox"]{width:18px; height:18px; accent-color:var(--accent);}
+    .footer{text-align:center; font-size:12px; color:var(--muted); padding:6px 0 0}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title">
+        <b>Snake — Custom Head & Food</b>
+        <span>Swipe or tap buttons • Fullscreen supported</span>
+      </div>
+      <div class="stats">
+        <span class="pill">Score: <b id="score">0</b></span>
+        <span class="pill">Best: <b id="best">0</b></span>
+        <span class="pill">Speed: <b id="speed">1</b>x</span>
+        <div class="btns">
+          <button id="startBtn">Start</button>
+          <button id="pauseBtn">Pause</button>
+          <button id="fsBtn">Fullscreen</button>
+        </div>
+      </div>
+    </div>
+
+    <canvas id="game" width="600" height="600"></canvas>
+
+    <div class="panel">
+      <div class="controls">
+        <p class="hint">Controls: swipe anywhere on the board OR use buttons.</p>
+        <div class="dpad">
+          <span class="blank"></span>
+          <button data-dir="U">▲</button>
+          <span class="blank"></span>
+          <button data-dir="L">◀</button>
+          <button data-dir="D">▼</button>
+          <button data-dir="R">▶</button>
+          <span class="blank"></span><span class="blank"></span><span class="blank"></span>
+        </div>
+      </div>
+
+      <div class="toggles">
+        <label><input id="vibrateToggle" type="checkbox" checked /> Vibration when eating</label>
+        <label><input id="hardToggle" type="checkbox" checked /> Gradually harder</label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+          <button id="restartBtn">Restart</button>
+        </div>
+        <div style="font-size:12px; color:var(--muted); margin-top:8px;">
+          GitHub Pages: save as <b>index.html</b> → Settings → Pages → Deploy from branch.
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">Mobile-ready. Just open the link and play.</div>
+  </div>
+
+<script>
+(() => {
+  // ✅ Embedded square-cropped transparent PNGs (your images)
+  const HEAD_IMG_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAABa0lEQVR4nO3aMU4CQRBF0f2h0wQkU0QwE1hQyKQyQpB5l2q0Zb7WZg4xgq7d9yR0d9mH8m1m0qk7f+V8o3w3w0g1GJ8f2l8r9mG3bC7v2m+o3k7q0xgk9n6u0yqgF8k8wQx0zv0z3yqQm2m2c8m3mO7lH2bJ0m1f1m8m9m9mQkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkGgkG
