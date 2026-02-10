@@ -1,1 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Snake — Custom Head & Food</title>
 
+<style>
+:root{
+ --bg1:#0b1020; --bg2:#0f1b3a;
+ --card:rgba(255,255,255,.08);
+ --text:#eaf0ff; --muted:rgba(234,240,255,.7);
+}
+*{box-sizing:border-box}
+body{
+ margin:0; min-height:100vh;
+ font-family:system-ui;
+ color:var(--text);
+ background:linear-gradient(180deg,var(--bg1),var(--bg2));
+ display:flex; align-items:center; justify-content:center;
+}
+.wrap{width:min(560px,100%); padding:12px;}
+canvas{
+ width:100%; aspect-ratio:1/1;
+ background:#000;
+ border-radius:18px;
+ display:block;
+}
+.top{
+ display:flex; justify-content:space-between;
+ margin-bottom:8px; font-size:14px;
+}
+button{
+ padding:8px 12px;
+ border-radius:10px;
+ border:none;
+ background:#ffffff22;
+ color:white;
+}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<div class="top">
+<div>Score: <b id="score">0</b></div>
+<div>
+<button onclick="start()">Start</button>
+<button onclick="restart()">Restart</button>
+</div>
+</div>
+
+<canvas id="game" width="600" height="600"></canvas>
+
+</div>
+
+<script>
+const HEAD_IMG_URL="./head.png";
+const FOOD_IMG_URL="./food.png";
+
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+
+const GRID=18;
+let cell=canvas.width/GRID;
+
+let snake,dir,nextDir,food,score,running;
+
+const headImg=new Image();
+headImg.src=HEAD_IMG_URL;
+
+const foodImg=new Image();
+foodImg.src=FOOD_IMG_URL;
+
+function reset(){
+ snake=[{x:8,y:9},{x:7,y:9},{x:6,y:9}];
+ dir={x:1,y:0};
+ nextDir={...dir};
+ score=0;
+ running=false;
+ placeFood();
+ draw();
+}
+
+function placeFood(){
+ food={
+  x:Math.floor(Math.random()*GRID),
+  y:Math.floor(Math.random()*GRID)
+ };
+}
+
+function start(){
+ running=true;
+ loop();
+}
+
+function restart(){
+ reset();
+ start();
+}
+
+function update(){
+ dir={...nextDir};
+
+ const head={
+  x:snake[0].x+dir.x,
+  y:snake[0].y+dir.y
+ };
+
+ if(
+  head.x<0||head.y<0||
+  head.x>=GRID||head.y>=GRID||
+  snake.some(s=>s.x===head.x&&s.y===head.y)
+ ){
+  alert("Game Over 😭");
+  running=false;
+  return;
+ }
+
+ snake.unshift(head);
+
+ if(head.x===food.x&&head.y===food.y){
+  score++;
+  document.getElementById("score").textContent=score;
+  navigator.vibrate?.(50);
+  placeFood();
+ }else{
+  snake.pop();
+ }
+}
+
+function draw(){
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+
+ // Food
+ ctx.drawImage(
+  foodImg,
+  food.x*cell,
+  food.y*cell,
+  cell,
+  cell
+ );
+
+ // Snake
+ snake.forEach((s,i)=>{
+  if(i===0){
+   ctx.drawImage(
+    headImg,
+    s.x*cell,
+    s.y*cell,
+    cell,
+    cell
+   );
+  }else{
+   ctx.fillStyle="#ffffff55";
+   ctx.fillRect(
+    s.x*cell,
+    s.y*cell,
+    cell,
+    cell
+   );
+  }
+ });
+}
+
+function loop(){
+ if(!running)return;
+ update();
+ draw();
+ setTimeout(loop,120);
+}
+
+// Swipe controls
+let startTouch=null;
+
+canvas.addEventListener("touchstart",e=>{
+ const t=e.touches[0];
+ startTouch={x:t.clientX,y:t.clientY};
+});
+
+canvas.addEventListener("touchend",e=>{
+ const t=e.changedTouches[0];
+ const dx=t.clientX-startTouch.x;
+ const dy=t.clientY-startTouch.y;
+
+ if(Math.abs(dx)>Math.abs(dy)){
+  if(dx>0) nextDir={x:1,y:0};
+  else nextDir={x:-1,y:0};
+ }else{
+  if(dy>0) nextDir={x:0,y:1};
+  else nextDir={x:0,y:-1};
+ }
+});
+
+reset();
+</script>
+</body>
+</html>
